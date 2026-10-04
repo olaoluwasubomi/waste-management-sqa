@@ -1,0 +1,234 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  COLLECTOR
+}
+
+enum WasteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WasteRequestStatus {
+  PENDING
+  APPROVED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  REJECTED
+}
+
+enum WasteQuantityUnit {
+  BAG
+  BIN
+  ITEM
+  KILOGRAM
+  TONNE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum RequestActivityType {
+  REQUEST_CREATED
+  REQUEST_UPDATED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  COLLECTOR_ASSIGNED
+  COLLECTION_STARTED
+  COLLECTION_COMPLETED
+  REQUEST_CANCELED
+  REQUEST_RESCHEDULED
+  PAYMENT_CREATED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String   @unique
+  phone              String?
+  password           String
+  image              String?
+  role               Role     @default(USER)
+  mustChangePassword Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  collectorProfile    CollectorProfile?
+  addresses           Address[]
+  requests            WasteRequest[]         @relation("UserRequests")
+  assignedPickups     WasteRequest[]         @relation("CollectorAssignments")
+  requestActivities   WasteRequestActivity[] @relation("RequestActivityCreator")
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  label      String?
+  street     String
+  city       String
+  state      String
+  postalCode String?
+  country    String   @default("Nigeria")
+  latitude   Float?
+  longitude  Float?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  wasteRequests WasteRequest[]
+
+  @@index([userId])
+}
+
+model WasteType {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  price       Float?
+  imageUrl    String?
+  status      WasteStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  wasteRequests WasteRequest[]
+
+  @@index([status])
+}
+
+model WasteRequest {
+  id                   String             @id @default(uuid())
+  reference            String             @unique
+  description          String?
+  quantity             Int                @default(1)
+  quantityUnit         WasteQuantityUnit  @default(BAG)
+  status               WasteRequestStatus @default(PENDING)
+  requestedPickupDate  DateTime
+  scheduledPickupStart DateTime?
+  scheduledPickupEnd   DateTime?
+  approvedAt           DateTime?
+  assignedAt           DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  canceledAt           DateTime?
+  rejectedAt           DateTime?
+  cancellationReason   String?
+  rejectionReason      String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  userId String
+  user   User   @relation("UserRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  collectorId String?
+  collector   User?   @relation("CollectorAssignments", fields: [collectorId], references: [id], onDelete: SetNull)
+
+  wasteTypeId String
+  wasteType   WasteType @relation(fields: [wasteTypeId], references: [id])
+
+  addressId String
+  address   Address @relation(fields: [addressId], references: [id])
+
+  pickupStreet     String
+  pickupCity       String
+  pickupState      String
+  pickupPostalCode String?
+  pickupCountry    String
+
+  payment    Payment?
+  activities WasteRequestActivity[]
+
+  @@index([userId])
+  @@index([collectorId])
+  @@index([wasteTypeId])
+  @@index([addressId])
+  @@index([status])
+  @@index([requestedPickupDate])
+  @@index([createdAt])
+}
+
+model WasteRequestActivity {
+  id          String              @id @default(uuid())
+  type        RequestActivityType
+  status      WasteRequestStatus?
+  title       String
+  description String?
+  createdAt   DateTime            @default(now())
+
+  wasteRequestId String
+  wasteRequest   WasteRequest @relation(fields: [wasteRequestId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("RequestActivityCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([wasteRequestId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  amount         Float
+  status         PaymentStatus @default(PENDING)
+  transactionRef String?       @unique
+  paidAt         DateTime?
+  failedAt       DateTime?
+  refundedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  wasteRequestId String       @unique
+  wasteRequest   WasteRequest @relation(fields: [wasteRequestId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model CollectorProfile {
+  id                  String   @id @default(uuid())
+  zone                String
+  isActive            Boolean  @default(true)
+  vehicleRegistration String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([zone])
+  @@index([isActive])
+}
