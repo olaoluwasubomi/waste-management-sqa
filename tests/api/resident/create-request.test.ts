@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   addressFindFirst: vi.fn(),
   requestFindUnique: vi.fn(),
   transaction: vi.fn(),
+
+  wasteRequestCreate: vi.fn(),
+  wasteRequestActivityCreate: vi.fn(),
 }));
 
 vi.mock("@/lib/verifyAuth", () => ({
@@ -122,7 +125,7 @@ describe("Resident waste request API", () => {
     expect(result.field).toBe("description");
   });
 
-  it("rejects unauthenticated users", async () => {
+  it("TC-RES-AUTH-01:rejects unauthenticated users", async () => {
     mocks.verifyAuth.mockResolvedValue(null);
 
     const response = await POST(createRequest());
@@ -131,7 +134,7 @@ describe("Resident waste request API", () => {
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
 
-  it("rejects Admin users creating resident requests", async () => {
+  it("TC-RES-AUTH-02:rejects Admin users creating resident requests", async () => {
     mocks.verifyAuth.mockResolvedValue({
       id: "admin-1",
       email: "admin@example.com",
@@ -143,4 +146,102 @@ describe("Resident waste request API", () => {
     expect(response.status).toBe(403);
     expect(mocks.transaction).not.toHaveBeenCalled();
   });
+
+  
+  it("TC-RES-03: creates a valid waste request successfully", async () => {
+    mocks.wasteTypeFindUnique.mockResolvedValue({
+        id: "waste-type-1",
+        name: "Household Waste",
+        status: "ACTIVE",
+        price: 1500,
+    });
+
+    mocks.addressFindFirst.mockResolvedValue({
+        id: "address-1",
+        userId: "resident-1",
+        label: "Home",
+        street: "10 Test Street",
+        city: "Lagos",
+        state: "Lagos",
+        postalCode: "100001",
+        country: "Nigeria",
+    });
+
+    mocks.requestFindUnique.mockResolvedValue(null);
+
+    const createdRequest = {
+        id: "request-1",
+        reference: "WR-20991220-TEST1234",
+        description: "Household waste",
+        quantity: 1,
+        quantityUnit: "BAG",
+        requestedPickupDate: new Date("2099-12-20T10:00:00.000Z"),
+        status: "PENDING",
+        createdAt: new Date(),
+        wasteType: {
+            id: "waste-type-1",
+            name: "Household Waste",
+            price: 1500,
+            imageUrl: null,
+        },
+        address: {
+            id: "address-1",
+            label: "Home",
+            street: "10 Test Street",
+            city: "Lagos",
+            state: "Lagos",
+            postalCode: "100001",
+            country: "Nigeria",
+        },
+    };
+
+    mocks.wasteRequestCreate.mockResolvedValue(createdRequest);
+
+    mocks.wasteRequestActivityCreate.mockResolvedValue({
+        id: "activity-1",
+    });
+
+
+    mocks.transaction.mockImplementation(async (callback) => {
+        return callback({
+            wasteRequest: {
+            create: mocks.wasteRequestCreate,
+        },
+        wasteRequestActivity: {
+            create: mocks.wasteRequestActivityCreate,
+        },
+    });
+  });
+
+    const response = await POST(createRequest());
+
+    
+    expect(response.status).toBe(201);
+
+    expect(mocks.wasteRequestCreate).toHaveBeenCalledOnce();
+
+    expect(mocks.wasteRequestCreate).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        userId: "resident-1",
+        quantity: 1,
+        status: "PENDING",
+      }),
+    })
+    );
+
+  
+    expect(mocks.wasteRequestActivityCreate).toHaveBeenCalledOnce();
+
+    expect(mocks.wasteRequestActivityCreate).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        wasteRequestId: "request-1",
+        createdById: "resident-1",
+        type: "REQUEST_CREATED",
+        status: "PENDING",
+      }),
+    })
+    );
+});
 });
