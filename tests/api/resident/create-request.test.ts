@@ -244,4 +244,97 @@ describe("Resident waste request API", () => {
     })
     );
 });
+
+it("TC-RES-05A: rejects a nonexistent waste type", async () => {
+
+  mocks.wasteTypeFindUnique.mockResolvedValue(null);
+
+
+  mocks.addressFindFirst.mockResolvedValue({
+    id: "address-1",
+    userId: "resident-1",
+  });
+
+  const response = await POST(createRequest());
+  const result = await response.json();
+
+  expect(response.status).toBe(404);
+  expect(result.field).toBe("wasteTypeId");
+  expect(mocks.transaction).not.toHaveBeenCalled();
+});
+
+it("TC-RES-05B: rejects an inactive waste type", async () => {
+  // Simulate an existing but inactive waste type.
+  mocks.wasteTypeFindUnique.mockResolvedValue({
+    id: "waste-type-1",
+    name: "Household Waste",
+    status: "INACTIVE",
+  });
+
+  mocks.addressFindFirst.mockResolvedValue({
+    id: "address-1",
+    userId: "resident-1",
+  });
+
+  const response = await POST(createRequest());
+  const result = await response.json();
+
+  expect(response.status).toBe(400);
+  expect(result.field).toBe("wasteTypeId");
+  expect(mocks.transaction).not.toHaveBeenCalled();
+});
+
+it("TC-RES-06A: rejects a nonexistent address", async () => {
+  // Simulate a valid, active waste type.
+  mocks.wasteTypeFindUnique.mockResolvedValue({
+    id: "waste-type-1",
+    name: "Household Waste",
+    status: "ACTIVE",
+  });
+
+  // Simulate an address that cannot be found.
+  mocks.addressFindFirst.mockResolvedValue(null);
+
+  const response = await POST(createRequest());
+  const result = await response.json();
+
+  expect(response.status).toBe(404);
+  expect(result.field).toBe("addressId");
+  expect(mocks.transaction).not.toHaveBeenCalled();
+});
+
+it("TC-RES-06B: rejects an address belonging to another resident", async () => {
+  mocks.wasteTypeFindUnique.mockResolvedValue({
+    id: "waste-type-1",
+    name: "Household Waste",
+    status: "ACTIVE",
+  });
+
+  // The database returns no matching address because
+  // the requested address is not owned by resident-1.
+  mocks.addressFindFirst.mockResolvedValue(null);
+
+  const response = await POST(
+    createRequest({ addressId: "address-2" })
+  );
+
+  const result = await response.json();
+
+  expect(response.status).toBe(404);
+  expect(result.field).toBe("addressId");
+
+  // Verify that the database lookup includes ownership.
+  expect(mocks.addressFindFirst).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: {
+        id: "address-2",
+        userId: "resident-1",
+      },
+    })
+  );
+
+  // No waste request should be created.
+  expect(mocks.transaction).not.toHaveBeenCalled();
+});
+
 });
