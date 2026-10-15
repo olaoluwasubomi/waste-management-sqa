@@ -143,7 +143,7 @@ describe("Resident waste request PostgreSQL integration", () => {
           where: { id: residentId },
         });
       }
-      
+
       if (otherResidentId) {
         await prisma.user.deleteMany({
             where: { id: otherResidentId },
@@ -260,6 +260,95 @@ it("TC-INT-03: rejects another Resident's address", async () => {
   });
 
   expect(requestCountAfter).toBe(requestCountBefore);
+});
+
+
+
+it("TC-INT-04: rolls back request when activity creation fails", async () => {
+
+  assertTestDatabase();
+
+ 
+  const requestsBefore = await prisma.wasteRequest.count({
+    where: { userId: residentId },
+  });
+
+  const activitiesBefore = await prisma.wasteRequestActivity.count({
+    where: { createdById: residentId },
+  });
+
+  
+  const triggerName = "sqa_reject_activity_insert";
+  const functionName = "sqa_reject_activity_insert_fn";
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE FUNCTION "${functionName}"()
+      RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'SQA simulated activity insertion failure';
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TRIGGER "${triggerName}"
+      BEFORE INSERT ON "WasteRequestActivity"
+      FOR EACH ROW
+      EXECUTE FUNCTION "${functionName}"();
+    `);
+
+  
+    const request = new NextRequest(
+      "http://localhost:3000/api/user/newrequests",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          wasteTypeId,
+          addressId,
+          description: "Rollback integration test",
+          quantity: 1,
+          quantityUnit: "BAG",
+          requestedPickupDate: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        }),
+      },
+    );
+
+    const response = await POST(request);
+    const result = await response.json();
+
+  
+    expect(response.status).toBe(500);
+    expect(result.success).toBe(false);
+
+    
+    const requestsAfter = await prisma.wasteRequest.count({
+      where: { userId: residentId },
+    });
+
+    const activitiesAfter = await prisma.wasteRequestActivity.count({
+      where: { createdById: residentId },
+    });
+
+    expect(requestsAfter).toBe(requestsBefore);
+    expect(activitiesAfter).toBe(activitiesBefore);
+  } finally {
+   
+    await prisma.$executeRawUnsafe(`
+      DROP TRIGGER IF EXISTS "${triggerName}"
+      ON "WasteRequestActivity";
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      DROP FUNCTION IF EXISTS "${functionName}"();
+    `);
+  }
 });
 
 });
