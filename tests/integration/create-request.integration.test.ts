@@ -21,9 +21,11 @@ describe("Resident waste request PostgreSQL integration", () => {
   let wasteTypeId: string;
   let addressId: string;
   let createdRequestId: string | undefined;
+  let otherResidentId: string;
+  let otherResidentAddressId: string;
 
   beforeAll(async () => {
-    // Check the database before loading the real Prisma client.
+ 
     assertTestDatabase();
 
     const prismaModule = await import("@/lib/prisma");
@@ -78,6 +80,31 @@ describe("Resident waste request PostgreSQL integration", () => {
       email: resident.email,
       role: "USER",
     });
+
+    const otherResident = await prisma.user.create({
+        data: {
+            firstName: "Other",
+            lastName: "Resident",
+            email: `other-resident-${unique}@example.test`,
+            password: "integration-test-only-not-a-real-password",
+            role: "USER",
+        },
+    });
+
+    otherResidentId = otherResident.id;
+
+    const otherAddress = await prisma.address.create({
+        data: {
+            userId: otherResidentId,
+            label: "Other Resident Home",
+            street: "25 Private Test Street",
+            city: "Coventry",
+            state: "West Midlands",
+            country: "United Kingdom",
+        },
+    });
+
+    otherResidentAddressId = otherAddress.id;
   });
 
   afterAll(async () => {
@@ -99,6 +126,11 @@ describe("Resident waste request PostgreSQL integration", () => {
           where: { id: addressId },
         });
       }
+      if (otherResidentAddressId) {
+        await prisma.address.deleteMany({
+            where: { id: otherResidentAddressId },
+        });
+      }
 
       if (wasteTypeId) {
         await prisma.wasteType.deleteMany({
@@ -111,10 +143,16 @@ describe("Resident waste request PostgreSQL integration", () => {
           where: { id: residentId },
         });
       }
+      
+      if (otherResidentId) {
+        await prisma.user.deleteMany({
+            where: { id: otherResidentId },
+        });
+      }
     } finally {
       await prisma.$disconnect();
     }
-  });
+   });
 
   it("TC-INT-01: persists a valid Resident waste request", async () => {
     const request = new NextRequest(
@@ -146,7 +184,7 @@ describe("Resident waste request PostgreSQL integration", () => {
 
     createdRequestId = result.request.id;
 
-    // Query the real PostgreSQL database.
+ 
     const savedRequest = await prisma.wasteRequest.findUnique({
       where: { id: createdRequestId },
       include: {
@@ -170,4 +208,59 @@ describe("Resident waste request PostgreSQL integration", () => {
       ),
     ).toBe(true);
   });
+
+
+it("TC-INT-03: rejects another Resident's address", async () => {
+
+  const otherAddress = await prisma.address.findUnique({
+    where: { id: otherResidentAddressId },
+  });
+
+  expect(otherAddress).not.toBeNull();
+  expect(otherAddress?.userId).toBe(otherResidentId);
+  expect(otherAddress?.userId).not.toBe(residentId);
+
+
+  const requestCountBefore = await prisma.wasteRequest.count({
+    where: { userId: residentId },
+  });
+
+  // Resident A attempts to use Resident B's address.
+  const request = new NextRequest(
+    "http://localhost:3000/api/user/newrequests",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        wasteTypeId,
+        addressId: otherResidentAddressId,
+        description: "Attempt to use another Resident's address",
+        quantity: 1,
+        quantityUnit: "BAG",
+        requestedPickupDate: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+      }),
+    },
+  );
+
+  const response = await POST(request);
+  const result = await response.json();
+
+  // Verify that the API rejects the request.
+  expect(response.status).toBe(404);
+  expect(result.success).toBe(false);
+  expect(result.field).toBe("addressId");
+
+  // Verify that PostgreSQL contains no additional request.
+  const requestCountAfter = await prisma.wasteRequest.count({
+    where: { userId: residentId },
+  });
+
+  expect(requestCountAfter).toBe(requestCountBefore);
 });
+
+});
+
