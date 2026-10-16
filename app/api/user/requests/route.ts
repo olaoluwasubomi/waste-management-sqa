@@ -42,18 +42,19 @@ function getStatusesForView(
   }
 }
 
+
 function parsePositiveInteger(
   value: string | null,
   fallback: number,
-) {
-  if (!value) {
+): number {
+  if (!value || !/^[0-9]+$/.test(value)) {
     return fallback;
   }
 
-  const parsedValue = Number.parseInt(value, 10);
+  const parsedValue = Number(value);
 
   if (
-    !Number.isInteger(parsedValue) ||
+    !Number.isSafeInteger(parsedValue) ||
     parsedValue < 1
   ) {
     return fallback;
@@ -61,6 +62,7 @@ function parsePositiveInteger(
 
   return parsedValue;
 }
+
 
 export async function GET(req: NextRequest) {
   try {
