@@ -383,11 +383,30 @@ export async function PATCH(
       );
     }
 
+
+
     let body: UpdateWasteRequestBody;
 
     try {
-      body =
-        (await request.json()) as UpdateWasteRequestBody;
+      const parsedBody: unknown = await request.json();
+
+      if (
+        parsedBody === null ||
+        typeof parsedBody !== "object" ||
+        Array.isArray(parsedBody)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid request body",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
+
+      body = parsedBody as UpdateWasteRequestBody;
     } catch {
       return NextResponse.json(
         {
@@ -399,6 +418,8 @@ export async function PATCH(
         },
       );
     }
+
+
 
     const existingRequest =
       await prisma.wasteRequest.findFirst({
