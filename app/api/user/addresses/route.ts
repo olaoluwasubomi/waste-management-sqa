@@ -79,8 +79,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const validation = validateAddressBody(body);
+  const body: unknown = await req.json();
+
+if (
+  body === null ||
+  typeof body !== "object" ||
+  Array.isArray(body)
+) {
+  return NextResponse.json(
+    { error: "Invalid address data" },
+    { status: 400 }
+  );
+}
+
+const validation = validateAddressBody(
+  body as Record<string, unknown>
+);
 
     if ("error" in validation) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
