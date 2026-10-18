@@ -7,22 +7,24 @@ import {
 import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/verifyAuth";
 
+
 function parsePositiveInteger(
   value: string | null,
   fallback: number,
 ) {
-  if (!value) {
+  if (!value || !/^[0-9]+$/.test(value)) {
     return fallback;
   }
 
-  const parsed = Number.parseInt(value, 10);
+  const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
     return fallback;
   }
 
   return parsed;
 }
+
 
 export async function GET(request: NextRequest) {
   try {
