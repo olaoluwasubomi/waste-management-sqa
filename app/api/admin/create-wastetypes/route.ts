@@ -18,18 +18,42 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
 
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const price = Number(formData.get("price"));
+
+    const rawName = formData.get("name");
+    const name =
+      typeof rawName === "string" ? rawName.trim() : "";
+
+    const rawDescription = formData.get("description");
+    const description =
+      typeof rawDescription === "string"
+        ? rawDescription.trim()
+        : "";
+
+    const rawPrice = formData.get("price");
+    const price =
+      typeof rawPrice === "string"
+        ? Number(rawPrice)
+        : NaN;
+
     const isActive = formData.get("isActive") === "true";
     const image = formData.get("image") as File | null;
 
-    if (!name || !price) {
+    // Validate required fields
+    if (!name || rawPrice === null || rawPrice === "") {
       return NextResponse.json(
         { error: "Name and price are required" },
         { status: 400 }
       );
     }
+
+    // Validate price
+    if (!Number.isFinite(price) || price <= 0) {
+      return NextResponse.json(
+        { error: "Price must be a valid positive number" },
+        { status: 400 }
+      );
+    }
+
 
     // check duplicate waste type
     const existing = await prisma.wasteType.findUnique({
