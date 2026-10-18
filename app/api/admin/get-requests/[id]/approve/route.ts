@@ -152,51 +152,60 @@ export async function PATCH(
 
     const approvedAt = new Date();
 
-    const updatedRequest =
-      await prisma.$transaction(
-        async (transaction) => {
-          const approvedRequest =
-            await transaction.wasteRequest.update({
-              where: {
-                id: existingRequest.id,
-              },
-              data: {
-                status:
-                  WasteRequestStatus.APPROVED,
-                approvedAt,
-              },
-              select: {
-                id: true,
-                reference: true,
-                status: true,
-                approvedAt: true,
-                updatedAt: true,
-              },
-            });
-
-          await transaction.wasteRequestActivity.create({
-            data: {
-              wasteRequestId:
-                existingRequest.id,
-              createdById: auth.id,
-
-              type:
-                RequestActivityType.REQUEST_APPROVED,
-
-              status:
-                WasteRequestStatus.APPROVED,
-
-              title:
-                "Pickup request approved",
-
-              description:
-                "The pickup request was reviewed and approved by an administrator.",
-            },
-          });
-
-          return approvedRequest;
+    const updatedRequest = await prisma.$transaction(async (transaction) => {
+      // Atomic conditional update: only a PENDING request can be approved.
+      const updateResult = await transaction.wasteRequest.updateMany({
+        where: {
+          id: existingRequest.id,
+          status: WasteRequestStatus.PENDING,
         },
+        data: {
+          status: WasteRequestStatus.APPROVED,
+          approvedAt,
+        },
+      });
+
+      // Another request has already changed the status.
+      if (updateResult.count === 0) {
+        return null;
+      }
+
+      await transaction.wasteRequestActivity.create({
+        data: {
+          wasteRequestId: existingRequest.id,
+          createdById: auth.id,
+          type: RequestActivityType.REQUEST_APPROVED,
+          status: WasteRequestStatus.APPROVED,
+          title: "Pickup request approved",
+          description:
+            "The pickup request was reviewed and approved by an administrator.",
+        },
+      });
+
+      return transaction.wasteRequest.findUniqueOrThrow({
+        where: {
+          id: existingRequest.id,
+        },
+        select: {
+          id: true,
+          reference: true,
+          status: true,
+          approvedAt: true,
+          updatedAt: true,
+        },
+      });
+    });
+
+    if (!updatedRequest) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This pickup request has already been approved",
+        },
+        { status: 409 },
       );
+    }
+
 
     return NextResponse.json(
       {
