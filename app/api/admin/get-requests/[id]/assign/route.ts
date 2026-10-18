@@ -19,7 +19,7 @@ interface RouteContext {
 }
 
 interface AssignCollectorBody {
-  collectorId?: string;
+  collectorId?: unknown;
 }
 
 export async function PATCH(
@@ -85,14 +85,17 @@ export async function PATCH(
       );
     }
 
-    const collectorId =
-      body.collectorId?.trim();
-
-    if (!collectorId) {
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body) ||
+      typeof body.collectorId !== "string" ||
+      !body.collectorId.trim()
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Collector is required",
+          error: "A valid collector ID is required",
           field: "collectorId",
         },
         {
@@ -100,6 +103,8 @@ export async function PATCH(
         },
       );
     }
+
+    const collectorId = body.collectorId.trim();
 
     const existingRequest =
       await prisma.wasteRequest.findUnique({
@@ -188,100 +193,99 @@ export async function PATCH(
       );
     }
 
+
     const assignedAt = new Date();
 
-    const updatedRequest =
-      await prisma.$transaction(
-        async (transaction) => {
-          const assignedRequest =
-            await transaction.wasteRequest.update({
-              where: {
-                id: existingRequest.id,
-              },
-
-              data: {
-                collectorId:
-                  collector.id,
-
-                status:
-                  WasteRequestStatus.ASSIGNED,
-
-                assignedAt,
-              },
-
-              select: {
-                id: true,
-                reference: true,
-                status: true,
-                assignedAt: true,
-                updatedAt: true,
-
-                collector: {
-                  select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                    phone: true,
-                    image: true,
-
-                    collectorProfile: {
-                      select: {
-                        zone: true,
-                        isActive: true,
-                        vehicleRegistration: true,
-                      },
-                    },
-                  },
-                },
-              },
-            });
-
-          await transaction.wasteRequestActivity.create({
+    const updatedRequest = await prisma.$transaction(
+      async (transaction) => {
+        const updateResult =
+          await transaction.wasteRequest.updateMany({
+            where: {
+              id: existingRequest.id,
+              status: WasteRequestStatus.APPROVED,
+            },
             data: {
-              wasteRequestId:
-                existingRequest.id,
-
-              createdById:
-                auth.id,
-
-              type:
-                RequestActivityType.COLLECTOR_ASSIGNED,
-
-              status:
-                WasteRequestStatus.ASSIGNED,
-
-              title:
-                "Collector assigned",
-
-              description:
-                `${collector.firstName} ${collector.lastName} was assigned to this pickup request.`,
+              collectorId: collector.id,
+              status: WasteRequestStatus.ASSIGNED,
+              assignedAt,
             },
           });
 
-          return assignedRequest;
+        // Another assignment may have changed the status.
+        if (updateResult.count === 0) {
+          return null;
+        }
+
+        await transaction.wasteRequestActivity.create({
+          data: {
+            wasteRequestId: existingRequest.id,
+            createdById: auth.id,
+            type: RequestActivityType.COLLECTOR_ASSIGNED,
+            status: WasteRequestStatus.ASSIGNED,
+            title: "Collector assigned",
+            description:
+              `${collector.firstName} ${collector.lastName} was assigned to this pickup request.`,
+          },
+        });
+
+        return transaction.wasteRequest.findUniqueOrThrow({
+          where: {
+            id: existingRequest.id,
+          },
+          select: {
+            id: true,
+            reference: true,
+            status: true,
+            assignedAt: true,
+            updatedAt: true,
+            collector: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                image: true,
+                collectorProfile: {
+                  select: {
+                    zone: true,
+                    isActive: true,
+                    vehicleRegistration: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+      },
+    );
+
+    if (!updatedRequest) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This pickup request has already been assigned",
+        },
+        {
+          status: 409,
         },
       );
+    }
 
     return NextResponse.json(
       {
         success: true,
-
-        message:
-          "Collector assigned successfully",
-
+        message: "Collector assigned successfully",
         request: {
           ...updatedRequest,
-
-          collector:
-            updatedRequest.collector
-              ? {
-                  ...updatedRequest.collector,
-
-                  fullName:
-                    `${updatedRequest.collector.firstName} ${updatedRequest.collector.lastName}`.trim(),
-                }
-              : null,
+          collector: updatedRequest.collector
+            ? {
+                ...updatedRequest.collector,
+                fullName:
+                  `${updatedRequest.collector.firstName} ${updatedRequest.collector.lastName}`.trim(),
+              }
+            : null,
         },
       },
       {
