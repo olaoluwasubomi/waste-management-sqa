@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAuth } from "@/lib/verifyAuth";
@@ -7,15 +8,77 @@ import { Role } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
-    // 🔐 Only admin allowed
+    // 1. Authentication
     const auth = await verifyAuth();
-    if (!auth || auth.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!auth) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    const body = await req.json();
-    const { firstName, lastName, email, phone, zone } = body;
+    // 2. Administrator authorisation
+    if (auth.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
 
+    // 3. Safe JSON parsing
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
+    // 4. Validate request structure
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
+    const data = body as Record<string, unknown>;
+
+    // 5. Normalise input fields
+    const firstName =
+      typeof data.firstName === "string"
+        ? data.firstName.trim()
+        : "";
+
+    const lastName =
+      typeof data.lastName === "string"
+        ? data.lastName.trim()
+        : "";
+
+    const email =
+      typeof data.email === "string"
+        ? data.email.trim().toLowerCase()
+        : "";
+
+    const zone =
+      typeof data.zone === "string"
+        ? data.zone.trim()
+        : "";
+
+    const phone =
+      typeof data.phone === "string"
+        ? data.phone.trim()
+        : undefined;
+
+    // 6. Required field validation
     if (!firstName || !lastName || !email || !zone) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -23,7 +86,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🚫 Prevent duplicate emails
+    // 7. Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    // 8. Prevent duplicate email addresses
     const existing = await prisma.user.findUnique({
       where: { email },
     });
@@ -35,13 +108,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔑 Temporary password
+    // 9. Generate temporary password
     const tempPassword = nanoid(10);
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    // 🧠 Atomic creation
+    // 10. Hash temporary password
+    const hashedPassword = await bcrypt.hash(
+      tempPassword,
+      10
+    );
+
+    // 11. Atomic user and collector profile creation
     await prisma.$transaction(async (tx) => {
-      // Create login account
       const user = await tx.user.create({
         data: {
           firstName,
@@ -54,7 +131,6 @@ export async function POST(req: Request) {
         },
       });
 
-      // Create collector profile
       await tx.collectorProfile.create({
         data: {
           userId: user.id,
@@ -63,13 +139,17 @@ export async function POST(req: Request) {
       });
     });
 
+    // 12. Successful response
     return NextResponse.json({
       message: "Collector created successfully",
       tempPassword,
     });
-
   } catch (error) {
     console.error("CREATE COLLECTOR ERROR:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }
