@@ -1,0 +1,94 @@
+
+name: Waste Management SQA Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  automated-tests:
+    name: Unit, Integration, Build and E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: waste_test_user
+          POSTGRES_PASSWORD: waste_test_password
+          POSTGRES_DB: waste_management_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U waste_test_user -d waste_management_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://waste_test_user:waste_test_password@127.0.0.1:5432/waste_management_test
+      NEXTAUTH_URL: http://127.0.0.1:3100
+      NEXTAUTH_SECRET: github-actions-sqa-test-secret-not-for-production
+      CI: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create test environment files
+        run: |
+          printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > .env.test
+          printf 'DATABASE_URL=%s\nNEXTAUTH_URL=%s\nNEXTAUTH_SECRET=%s\n' \
+            "$DATABASE_URL" "$NEXTAUTH_URL" "$NEXTAUTH_SECRET" > .env.e2e
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Build Next.js application
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
