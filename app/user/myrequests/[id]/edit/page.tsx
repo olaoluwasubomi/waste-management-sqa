@@ -363,12 +363,7 @@ export default function EditRequestPage() {
               "ACTIVE",
           );
 
-        /*
-         * If the request's current waste type
-         * later becomes inactive, include it
-         * so the form can still display the
-         * existing selection.
-         */
+     
         const existingWasteType =
           wasteTypeResult.find(
             (wasteType) =>

@@ -325,7 +325,6 @@ test.describe.serial(
     test(
       "TC-E2E-ADMIN-05: approves a pending pickup request",
       async ({ page }) => {
-        // Additional time for debugging a potentially slow API.
         test.setTimeout(240_000);
 
         await openRequestDetails(page);
@@ -334,8 +333,7 @@ test.describe.serial(
           "[E2E-04] Clicking Approve Request",
         );
 
-        // Start listening BEFORE clicking so we cannot miss
-        // the approval API response.
+    
         const approvalResponsePromise = page.waitForResponse(
           (response) =>
             response.url().includes(
@@ -382,8 +380,7 @@ test.describe.serial(
           );
         }
 
-        // Inspect the actual database state even when
-        // the API response times out.
+      
         const databaseRequest =
           await prisma.wasteRequest.findUnique({
             where: {

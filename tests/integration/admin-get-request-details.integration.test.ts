@@ -50,7 +50,6 @@ describe("Admin request details PostgreSQL integration", () => {
     GET(getRequest(id), context(id));
 
   beforeAll(async () => {
-    // Must run before importing or connecting Prisma.
     assertTestDatabase();
 
     const prismaModule = await import("@/lib/prisma");

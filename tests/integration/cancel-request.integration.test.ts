@@ -11,7 +11,6 @@ import { NextRequest } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { assertTestDatabase } from "./test-database";
 
-// Mock authentication only. Prisma remains real.
 const mocks = vi.hoisted(() => ({
   verifyAuth: vi.fn(),
 }));
@@ -34,7 +33,6 @@ describe("Resident waste request cancellation PostgreSQL integration", () => {
   let rollbackRequestId: string | undefined;
 
   beforeAll(async () => {
-    // Protect against accidentally using the development database.
     assertTestDatabase();
 
     const prismaModule = await import("@/lib/prisma");
@@ -545,14 +543,11 @@ it("TC-INT-CANCEL-05: rolls back cancellation when activity creation fails", asy
   expect(beforeCancellation?.canceledAt).toBeNull();
   expect(beforeCancellation?.cancellationReason).toBeNull();
 
-  // Use a uniquely named trigger function for this test.
   const triggerSuffix = crypto.randomUUID().replace(/-/g, "");
   const functionName = `sqa_cancel_fail_${triggerSuffix}`;
   const triggerName = `sqa_cancel_trigger_${triggerSuffix}`;
 
   try {
-    // Create a function that rejects cancellation activities
-    // for this specific test request.
     await prisma.$executeRawUnsafe(`
       CREATE FUNCTION "${functionName}"()
       RETURNS trigger
@@ -569,7 +564,6 @@ it("TC-INT-CANCEL-05: rolls back cancellation when activity creation fails", asy
       $$;
     `);
 
-    // Attach the function to the activity table.
     await prisma.$executeRawUnsafe(`
       CREATE TRIGGER "${triggerName}"
       BEFORE INSERT ON "WasteRequestActivity"
@@ -620,7 +614,7 @@ it("TC-INT-CANCEL-05: rolls back cancellation when activity creation fails", asy
 
     expect(activityCount).toBe(0);
   } finally {
-    // Always remove the test-only trigger and function.
+    
     await prisma.$executeRawUnsafe(`
       DROP TRIGGER IF EXISTS "${triggerName}"
       ON "WasteRequestActivity";

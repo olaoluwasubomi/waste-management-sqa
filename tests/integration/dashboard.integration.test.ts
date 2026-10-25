@@ -356,13 +356,10 @@ describe("Resident Dashboard PostgreSQL Integration Tests", () => {
 
     expect(response.status).toBe(200);
 
-    // Current API implementation:
-    // PENDING, ASSIGNED, IN_PROGRESS = active.
-    // APPROVED is not included in active requests.
+   
     expect(body.stats.activeRequests).toBe(3);
     expect(body.stats.completedRequests).toBe(1);
 
-    // All statuses remain eligible for the recent list.
     expect(body.recentRequests).toHaveLength(5);
   });
 });

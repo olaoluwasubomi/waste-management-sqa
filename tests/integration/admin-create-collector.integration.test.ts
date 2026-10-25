@@ -62,7 +62,6 @@ describe("POST /api/admin/create-collectors - Integration Tests", () => {
   let POST: typeof import("@/app/api/admin/create-collectors/route").POST;
 
   beforeAll(async () => {
-    // Safety guard: never execute against the development database.
     assertTestDatabase();
 
     prisma = (await import("@/lib/prisma")).default;
@@ -83,8 +82,7 @@ describe("POST /api/admin/create-collectors - Integration Tests", () => {
   afterAll(async () => {
     if (!prisma) return;
 
-    // Clean only records created with this suite's unique prefix.
-    // CollectorProfile records are removed through onDelete: Cascade.
+ 
     await prisma.user.deleteMany({
       where: {
         email: {
@@ -334,9 +332,7 @@ describe("POST /api/admin/create-collectors - Integration Tests", () => {
           }
 
           return originalTransaction(async (tx) => {
-            // Replace only the profile insertion in this test.
-            // A nonexistent userId triggers a PostgreSQL
-            // foreign-key constraint failure.
+          
             const wrappedTx = {
               user: tx.user,
               collectorProfile: {

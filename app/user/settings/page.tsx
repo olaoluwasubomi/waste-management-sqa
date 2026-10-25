@@ -342,10 +342,7 @@ export default function UserSettingsPage() {
 
         setProfileImage(user.image);
 
-        /*
-         * The addresses endpoint returns a plain array.
-         * An empty array is valid when the user has no address.
-         */
+     
         if (addressResponse.ok) {
           const addressResult =
             (await addressResponse.json()) as RawAddress[];
@@ -653,10 +650,6 @@ export default function UserSettingsPage() {
     try {
       setIsSavingPassword(true);
 
-      /*
-       * Connect this to:
-       * PATCH /api/user/settings/password
-       */
       await new Promise((resolve) => setTimeout(resolve, 700));
 
       setPasswordForm({
@@ -680,10 +673,7 @@ export default function UserSettingsPage() {
     try {
       setIsSavingCollection(true);
 
-      /*
-       * Connect this to:
-       * PATCH /api/user/settings/preferences
-       */
+   
       await new Promise((resolve) => setTimeout(resolve, 700));
 
       showSuccess("Collection preferences saved.");
@@ -696,10 +686,7 @@ export default function UserSettingsPage() {
     try {
       setIsSavingNotifications(true);
 
-      /*
-       * Connect this to:
-       * PATCH /api/user/settings/notifications
-       */
+      
       await new Promise((resolve) => setTimeout(resolve, 700));
 
       showSuccess("Notification preferences saved.");
@@ -716,10 +703,7 @@ export default function UserSettingsPage() {
     try {
       setIsDeletingAccount(true);
 
-      /*
-       * Connect this to:
-       * DELETE /api/user/account
-       */
+  
       await new Promise((resolve) => setTimeout(resolve, 900));
 
       setDeleteModalOpen(false);

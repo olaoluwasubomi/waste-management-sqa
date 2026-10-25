@@ -406,7 +406,6 @@ export default function SettingsPage() {
 				</div>
 			</div>
 
-			{/* Notifications and Save are merged into the right column above. */}
 		</div>
 	);
 }

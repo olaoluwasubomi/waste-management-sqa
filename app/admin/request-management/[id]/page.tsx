@@ -419,11 +419,7 @@ useEffect(() => {
       );
     }
 
-    /*
-     * Update the current request in local state
-     * so the interface changes immediately from
-     * PENDING to APPROVED.
-     */
+   
     setRequest((currentRequest) => {
       if (!currentRequest) {
         return currentRequest;
@@ -442,13 +438,6 @@ useEffect(() => {
           result.request?.updatedAt ??
           new Date().toISOString(),
 
-        /*
-         * Add the activity locally so the admin
-         * immediately sees it in the timeline.
-         *
-         * The actual database activity has already
-         * been created by the backend.
-         */
         activities: [
           {
             id: `approved-${Date.now()}`,
@@ -1099,10 +1088,7 @@ async function handleAssignCollector(
             );
           }}
           onConfirm={() => {
-            /*
-             * We'll replace this with
-             * PATCH reject endpoint.
-             */
+          
             console.log(
               "Reject request:",
               request.id,

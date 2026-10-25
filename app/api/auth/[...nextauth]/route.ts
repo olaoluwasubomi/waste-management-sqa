@@ -40,7 +40,7 @@ export const authOptions : AuthOptions = {
           throw new Error("Incorrect password");
         }
 
-        // Return user object – NextAuth stores this in the session
+        // Return user object 
         return {
           id: user.id,
           name: user.firstName + " " + user.lastName,

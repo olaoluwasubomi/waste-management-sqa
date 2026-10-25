@@ -62,7 +62,6 @@ async function getUsers(query: Record<string, string> = {}) {
 
 describe("GET /api/admin/get-users - PostgreSQL Integration", () => {
   beforeAll(async () => {
-    // Load the real database guard before connecting.
     const { assertTestDatabase } = await import(
       "./test-database"
     );
@@ -77,7 +76,6 @@ describe("GET /api/admin/get-users - PostgreSQL Integration", () => {
     );
     GET = routeModule.GET;
 
-    // Unique test records; never delete existing application data.
     await prisma.user.createMany({
       data: [
         {
@@ -135,7 +133,6 @@ describe("GET /api/admin/get-users - PostgreSQL Integration", () => {
 
   afterAll(async () => {
     if (prisma) {
-      // Only delete records created by this test suite.
       await prisma.user.deleteMany({
         where: {
           email: {

@@ -350,8 +350,7 @@ describe("Admin request approval PostgreSQL integration", () => {
     const triggerName = `sqa_approve_trigger_${suffix}`;
 
     try {
-      // This trigger rejects approval activities only for
-      // the request created by this test.
+    
       await prisma.$executeRawUnsafe(`
         CREATE FUNCTION "${functionName}"()
         RETURNS trigger

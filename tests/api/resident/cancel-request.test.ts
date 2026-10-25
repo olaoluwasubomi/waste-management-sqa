@@ -459,9 +459,7 @@ it("TC-RES-CANCEL-07: rejects cancellation of a request not owned by the Residen
     role: "USER",
   });
 
-  // Simulate no matching request for this Resident.
-  // This could mean the request does not exist or belongs
-  // to another Resident.
+  
   mocks.findFirst.mockResolvedValue(null);
 
   const request = new NextRequest(

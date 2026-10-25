@@ -66,17 +66,17 @@ export default function ChangePasswordPage() {
     try {
       setLoading(true);
 
-      // 1️⃣ Update password in DB
+      // 1 Update password in DB
       await api.post("/auth/change-password", {
         newPassword: values.password,
       });
 
-      // 2️⃣ Refresh NextAuth session (VERY IMPORTANT)
+      // 2 Refresh NextAuth session (VERY IMPORTANT)
       await update();
 
       toast.success("Password updated successfully");
 
-      // 3️⃣ Route based on role
+      // 3 Route based on role
       routeByRole(session?.user.role ?? "USER");
 
     } catch (err: any) {

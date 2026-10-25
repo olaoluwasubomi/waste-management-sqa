@@ -153,7 +153,7 @@ export async function PATCH(
     const approvedAt = new Date();
 
     const updatedRequest = await prisma.$transaction(async (transaction) => {
-      // Atomic conditional update: only a PENDING request can be approved.
+      
       const updateResult = await transaction.wasteRequest.updateMany({
         where: {
           id: existingRequest.id,

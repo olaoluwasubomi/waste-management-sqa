@@ -154,10 +154,7 @@ export async function GET(req: NextRequest) {
       userId: auth.id,
     };
 
-    /*
-     * An exact status filter takes priority over
-     * the broader view filter.
-     */
+   
     if (status) {
       where.status = status;
     } else if (viewStatuses) {

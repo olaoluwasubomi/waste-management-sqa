@@ -34,7 +34,7 @@ export default function ResetPasswordClient() {
       const response = await api.post("/reset_password", {
         token,
         password,
-        confirmPassword, // ← important
+        confirmPassword, 
       });
 
       if (response.status === 200) {

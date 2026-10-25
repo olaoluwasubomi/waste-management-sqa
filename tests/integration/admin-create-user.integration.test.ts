@@ -320,13 +320,7 @@ describe("POST /api/admin/create-users - PostgreSQL Integration", () => {
       address: "Rollback Test Street",
     });
 
-    // A real transaction rollback requires a genuine database
-    // error inside the transaction. For this test, the production
-    // transaction is used with an intentionally invalid value
-    // supplied through a test-specific transaction wrapper.
-    //
-    // The actual rollback assertion is performed by checking
-    // PostgreSQL after the transaction fails.
+ 
 
     const originalTransaction = prisma.$transaction.bind(prisma);
 
@@ -342,8 +336,7 @@ describe("POST /api/admin/create-users - PostgreSQL Integration", () => {
             user: tx.user,
             address: {
               create: async () => {
-                // Deliberately violate the required street field
-                // using the real transaction connection.
+             
               return tx.address.create({
                 data: {
                     street: "Rollback Test Street",

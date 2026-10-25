@@ -295,10 +295,7 @@ export default function AdminRequestsPage() {
 
   const [search, setSearch] = useState("");
 
-  /*
-   * Debounced value used for the API call so we
-   * don't send a request after every keystroke.
-   */
+  
   const [debouncedSearch, setDebouncedSearch] =
     useState("");
 
@@ -311,9 +308,7 @@ export default function AdminRequestsPage() {
     string | null
   >(null);
 
-  /*
-   * Debounce search input.
-   */
+ 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearch(search.trim());
@@ -325,12 +320,7 @@ export default function AdminRequestsPage() {
     };
   }, [search]);
 
-  /*
-   * Fetch requests whenever:
-   * - tab changes
-   * - search changes
-   * - page changes
-   */
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -452,25 +442,14 @@ export default function AdminRequestsPage() {
   }
 
   function handleRefresh() {
-    /*
-     * Simple way of forcing the page to re-fetch.
-     * Since the page state itself may not change,
-     * we'll reload the current document.
-     */
+   
     window.location.reload();
   }
 
   function openRequest(
     requestId: string,
   ) {
-    /*
-     * Keep this route consistent with where your
-     * request detail page actually exists.
-     *
-     * Based on your desktop route, we're using:
-     *
-     * /admin/request-management/[id]
-     */
+  
     router.push(
       `/admin/request-management/${requestId}`,
     );

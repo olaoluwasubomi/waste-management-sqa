@@ -72,9 +72,7 @@ export async function PATCH(
     try {
       body = (await request.json()) as CancelRequestBody;
     } catch {
-      /*
-       * Reason is optional, so an empty request body is valid.
-       */
+    
     }
 
     const cancellationReason = body.reason?.trim() || null;

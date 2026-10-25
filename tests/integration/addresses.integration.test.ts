@@ -57,7 +57,6 @@ describe("Resident Address Management PostgreSQL integration", () => {
   }
 
   beforeAll(async () => {
-    // Never connect to or modify the development database.
     assertTestDatabase();
 
     const prismaModule = await import("@/lib/prisma");
@@ -189,8 +188,6 @@ describe("Resident Address Management PostgreSQL integration", () => {
     if (!prisma) return;
 
     try {
-      // Remove only records created by this test suite.
-      // Delete dependent records before their parent records.
 
       if (linkedRequestId) {
         await prisma.wasteRequest.deleteMany({
@@ -198,8 +195,6 @@ describe("Resident Address Management PostgreSQL integration", () => {
         });
       }
 
-      // Both user IDs were generated specifically for this suite.
-      // This also removes addresses created through POST.
       const testResidentIds = [
         residentId,
         otherResidentId,

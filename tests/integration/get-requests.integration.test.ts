@@ -283,7 +283,6 @@ if (completedRequestId) {
         });
       }
     } finally {
-      // Always disconnect Prisma.
       await prisma.$disconnect();
     }
   });
@@ -515,8 +514,6 @@ if (completedRequestId) {
   it(
     "TC-INT-GET-05: searches Resident waste requests using PostgreSQL",
     async () => {
-      // Search for part of the COMPLETED request description.
-      // Use lowercase to verify case-insensitive searching.
       const request = new NextRequest(
         "http://localhost:3000/api/user/requests?search=completed%20waste%20collection",
         {

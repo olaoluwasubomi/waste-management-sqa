@@ -4,7 +4,6 @@ import { NextRequest } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { assertTestDatabase } from "./test-database";
 
-// Mock authentication only. Prisma will remain real.
 const mocks = vi.hoisted(() => ({
   verifyAuth: vi.fn(),
 }));
@@ -249,12 +248,12 @@ it("TC-INT-03: rejects another Resident's address", async () => {
   const response = await POST(request);
   const result = await response.json();
 
-  // Verify that the API rejects the request.
+
   expect(response.status).toBe(404);
   expect(result.success).toBe(false);
   expect(result.field).toBe("addressId");
 
-  // Verify that PostgreSQL contains no additional request.
+
   const requestCountAfter = await prisma.wasteRequest.count({
     where: { userId: residentId },
   });

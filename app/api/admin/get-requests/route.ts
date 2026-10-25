@@ -60,9 +60,7 @@ export async function GET(request: NextRequest) {
     const searchParams =
       request.nextUrl.searchParams;
 
-    /*
-     * Pagination
-     */
+    
     const page = parsePositiveInteger(
       searchParams.get("page"),
       1,
@@ -82,9 +80,7 @@ export async function GET(request: NextRequest) {
     const skip =
       (page - 1) * limit;
 
-    /*
-     * Status filter
-     */
+   
     const statusParam =
       searchParams
         .get("status")
@@ -104,17 +100,13 @@ export async function GET(request: NextRequest) {
         ? (statusParam as WasteRequestStatus)
         : undefined;
 
-    /*
-     * Search
-     */
+  
     const search =
       searchParams
         .get("search")
         ?.trim() || undefined;
 
-    /*
-     * Sort
-     */
+ 
     const order =
       searchParams
         .get("order")
@@ -122,13 +114,7 @@ export async function GET(request: NextRequest) {
         ? "asc"
         : "desc";
 
-    /*
-     * Build Prisma where condition.
-     *
-     * Notice that there is NO userId filter
-     * here because an admin should see all
-     * resident pickup requests.
-     */
+ 
     const where: Prisma.WasteRequestWhereInput =
       {};
 
@@ -211,9 +197,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    /*
-     * Get requests + total count
-     */
+  
     const [requests, total] =
       await prisma.$transaction([
         prisma.wasteRequest.findMany({
@@ -314,9 +298,7 @@ export async function GET(request: NextRequest) {
         }),
       ]);
 
-    /*
-     * Format requests for the admin UI.
-     */
+ 
     const formattedRequests =
       requests.map((request) => ({
         id: request.id,
@@ -455,12 +437,7 @@ export async function GET(request: NextRequest) {
           request.payment,
       }));
 
-    /*
-     * Summary statistics.
-     *
-     * These are based on all requests,
-     * not only the current page.
-     */
+ 
     const [
       pendingCount,
       approvedCount,

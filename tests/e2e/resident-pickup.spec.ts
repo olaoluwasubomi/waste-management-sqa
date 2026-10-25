@@ -47,8 +47,7 @@ async function loginResident(page: Page) {
     page.url(),
   );
 
-  // A successful redirect does not necessarily mean
-  // the protected dashboard has finished loading.
+
   await expect(
     page.getByText("Loading your account..."),
   ).toBeHidden({
@@ -82,7 +81,6 @@ async function openPickupForm(page: Page) {
       .isVisible(),
   );
 
-  // Wait for the protected page's loading state.
   await expect(
     page.getByText("Loading your account..."),
   ).toBeHidden({
@@ -385,9 +383,7 @@ test.describe.serial(
           "[E2E-03] Submitting invalid quantity",
         );
 
-        // Dispatch the submit event to exercise React
-        // validation without native HTML min constraints
-        // blocking the event first.
+     
         await page.locator("form").evaluate((form) => {
           form.dispatchEvent(
             new Event("submit", {

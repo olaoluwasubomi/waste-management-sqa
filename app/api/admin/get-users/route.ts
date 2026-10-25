@@ -71,7 +71,6 @@ export async function GET(req: Request) {
           ],
         });
       } else {
-        // Full name must match both components
         filters.push({
           AND: [
             {

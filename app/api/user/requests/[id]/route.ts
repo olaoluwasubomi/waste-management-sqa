@@ -708,10 +708,7 @@ export async function PATCH(
                 quantityUnit,
                 requestedPickupDate,
 
-                /*
-                 * Keep the pickup snapshot in sync
-                 * if the address was changed.
-                 */
+               
                 pickupStreet: address.street,
                 pickupCity: address.city,
                 pickupState: address.state,

@@ -65,7 +65,6 @@ describe("Resident request details and update PostgreSQL integration", () => {
   };
 
   beforeAll(async () => {
-    // Never connect unless this is the dedicated test database.
     assertTestDatabase();
 
     const prismaModule = await import("@/lib/prisma");
@@ -178,7 +177,6 @@ describe("Resident request details and update PostgreSQL integration", () => {
     if (!prisma) return;
 
     try {
-      // Remove only fixtures belonging to this test suite.
       if (requestIds.length > 0) {
         await prisma.wasteRequestActivity.deleteMany({
           where: {
@@ -423,7 +421,6 @@ describe("Resident request details and update PostgreSQL integration", () => {
     const triggerName = `sqa_update_trigger_${triggerSuffix}`;
 
     try {
-      // Reject activity insertion only for this fixture.
       await prisma.$executeRawUnsafe(`
         CREATE FUNCTION "${functionName}"()
         RETURNS trigger

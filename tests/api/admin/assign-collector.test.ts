@@ -245,7 +245,7 @@ describe("PATCH /api/admin/get-requests/[id]/assign - Unit Tests", () => {
   });
 
   it("TC-ADM-ASG-14: rejects an inactive collector", async () => {
-    // The real Prisma query excludes inactive collectors.
+   
     mocks.findCollector.mockResolvedValue(null);
 
     const response = await PATCH(createRequest(), createContext());

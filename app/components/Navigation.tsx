@@ -1,34 +1,3 @@
-// "use client"
-// import Link from "next/link"
-// export default function Navigation() {
-//     return(
-//         <div className="fixed top-0 left-0 z-50 flex items-center justify-between w-full bg-white px-10 py-3 shadow-xl">
-//             {/* LOGO */}
-//             <div className="w-1/6">
-//                 <h4 className="font-bold text-2xl italic">EcoWaste</h4>
-//             </div>
-//             {/* MENU */}
-//             <div className="flex flex-1 items-center justify-center gap-x-20 ">
-//                 <Link className="text-lg font-normal" href="/">About</Link>
-//                 <Link className="text-lg font-normal" href="">How it Works</Link>
-//                 <Link className="text-lg font-normal" href="">Services</Link>
-//                 <Link className="text-lg font-normal" href="">Contact</Link>
-//             </div>
-
-//             {/* ACTION BUTTONS */}
-//             <div className="w-1/6 flex justify-end">
-//                 <button className="bg-green-600 text-white px-15 py-3 rounded-lg hover:bg-green-800">
-//                     <Link href="" className="font-bold">Log In</Link>
-//                 </button>
-//             </div>
-//         </div>
-//     )
-// }
-
-
-
-
-
 "use client";
 import { useState } from "react";
 import Link from "next/link";

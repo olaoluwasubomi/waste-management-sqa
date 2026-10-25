@@ -4,10 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import Image from "next/image";
 
-/**
- * This matches the API response from:
- * /api/admin/collectors
- */
+
 export interface Collector {
   id: string;
   name: string;
@@ -93,7 +90,7 @@ export default function CollectorsTable({ data }: Props) {
                 {/* RATING */}
                 <td className="px-6 py-4">
                   <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">
-                    ⭐ {collector.rating}
+                    {collector.rating}
                   </span>
                 </td>
 
